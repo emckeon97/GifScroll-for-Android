@@ -14,17 +14,22 @@ object GiphyService {
     private val client = OkHttpClient()
     private const val BASE = "https://api.giphy.com/v1/gifs"
 
-    private val comedyQueries = listOf(
-        "funny", "comedy", "lol", "hilarious", "memes",
-        "funny animals", "stand up comedy", "funny fails"
+    private val memeQueries = listOf(
+        "meme",
+        "dank memes",
+        "funny memes",
+        "shitpost",
+        "relatable memes",
+        "surreal meme",
+        "cursed memes"
     )
 
-    /** The main feed: comedy-leaning GIFs, query rotated for variety. */
-    suspend fun comedyFeed(): List<Gif> = search(comedyQueries.random())
+    /** The main feed: iFunny-style meme GIFs, query rotated for variety. */
+    suspend fun comedyFeed(): List<Gif> = search(memeQueries.random())
 
     suspend fun search(query: String): List<Gif> = withContext(Dispatchers.IO) {
         val url = "$BASE/search?api_key=${Secrets.GIPHY_API_KEY}" +
-            "&q=${URLEncoder.encode(query, "UTF-8")}&limit=25&rating=pg-13"
+            "&q=${URLEncoder.encode(query, "UTF-8")}&limit=50&rating=pg-13"
         val request = Request.Builder().url(url).build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) return@withContext emptyList()
