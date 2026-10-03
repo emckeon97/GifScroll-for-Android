@@ -56,6 +56,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil3.compose.AsyncImage
 import com.emckeon97.gifscroll.data.AppContainer
+import com.emckeon97.gifscroll.data.LikeManager
 import com.emckeon97.gifscroll.model.FeedItem
 import com.emckeon97.gifscroll.model.Post
 import com.emckeon97.gifscroll.model.Repost
