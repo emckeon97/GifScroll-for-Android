@@ -10,7 +10,8 @@ import java.io.IOException
 
 /**
  * The main feed: funny memes, GIFs, and videos from Reddit's meme
- * communities. Free, no API key — Reddit's public JSON endpoints.
+ * communities, via the Arctic Shift mirror. Free, no API key —
+ * Reddit's own endpoints now bot-block unauthenticated requests.
  */
 object RedditService {
     private val client = OkHttpClient()
@@ -19,8 +20,7 @@ object RedditService {
     suspend fun memeFeed(): List<FeedItem> = withContext(Dispatchers.IO) {
         val sub = subreddits.random()
         val request = Request.Builder()
-            .url("https://www.reddit.com/r/$sub/hot.json?limit=50")
-            // Reddit requires a User-Agent on unauthenticated requests.
+            .url("https://arctic-shift.photon-reddit.com/api/posts/search?subreddit=$sub&sort=desc&limit=50")
             .header("User-Agent", "GifScroll/1.0 (by /u/gifscroll)")
             .build()
         val body = client.newCall(request).execute().use { resp ->
@@ -32,11 +32,9 @@ object RedditService {
 
     private fun parse(json: String): List<FeedItem> {
         val out = mutableListOf<FeedItem>()
-        val children = JSONObject(json)
-            .getJSONObject("data")
-            .getJSONArray("children")
-        for (i in 0 until children.length()) {
-            val p = children.getJSONObject(i).getJSONObject("data")
+        val posts = JSONObject(json).optJSONArray("data") ?: return out
+        for (i in 0 until posts.length()) {
+            val p = posts.getJSONObject(i)
             if (p.optBoolean("over_18") || p.optBoolean("stickied")) continue
             val title = p.optString("title").trim()
             if (title.isEmpty() || title == "[deleted]" || title == "[removed]") continue
