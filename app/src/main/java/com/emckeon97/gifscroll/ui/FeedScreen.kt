@@ -1,5 +1,6 @@
 package com.emckeon97.gifscroll.ui
 
+import android.os.Build
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -28,14 +29,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import android.os.Build
 import coil3.ImageLoader
 import coil3.compose.AsyncImage
 import coil3.gif.AnimatedImageDecoder
 import coil3.gif.GifDecoder
 import com.emckeon97.gifscroll.data.AppContainer
-import com.emckeon97.gifscroll.data.GiphyService
-import com.emckeon97.gifscroll.model.Gif
+import com.emckeon97.gifscroll.data.RedditService
+import com.emckeon97.gifscroll.model.FeedItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -56,23 +56,23 @@ fun rememberGifImageLoader(): ImageLoader {
     }
 }
 
-/** The comedy GIF feed: one full-screen swipeable GIF per page. */
+/** The meme feed: one full-screen swipeable meme/GIF/video per page. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FeedScreen(container: AppContainer, modifier: Modifier = Modifier) {
-    var gifs by remember { mutableStateOf<List<Gif>>(emptyList()) }
+    var items by remember { mutableStateOf<List<FeedItem>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         val fetched = withContext(Dispatchers.IO) {
             try {
-                GiphyService.comedyFeed()
+                RedditService.memeFeed()
             } catch (e: Exception) {
                 emptyList()
             }
         }
         // Rank by the user's liked keywords.
-        gifs = fetched.sortedByDescending { container.likeManager.score(it.title) }
+        items = fetched.sortedByDescending { container.likeManager.score(it.title) }
         loading = false
     }
 
@@ -83,12 +83,16 @@ fun FeedScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 color = Color.White
             )
             else -> {
-                val pagerState = rememberPagerState(pageCount = { gifs.size })
+                val pagerState = rememberPagerState(pageCount = { items.size })
                 VerticalPager(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize()
                 ) { page ->
-                    GifPage(gif = gifs[page], container = container)
+                    FeedPage(
+                        item = items[page],
+                        container = container,
+                        isPlaying = pagerState.currentPage == page
+                    )
                 }
             }
         }
@@ -96,22 +100,26 @@ fun FeedScreen(container: AppContainer, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun GifPage(gif: Gif, container: AppContainer) {
+fun FeedPage(item: FeedItem, container: AppContainer, isPlaying: Boolean) {
     val context = LocalContext.current
-    var liked by remember(gif.id) {
-        mutableStateOf(container.likeManager.isLiked(gif.id))
+    var liked by remember(item.id) {
+        mutableStateOf(container.likeManager.isLiked(item.id))
     }
     var showComments by remember { mutableStateOf(false) }
     var showReport by remember { mutableStateOf(false) }
 
     Box(Modifier.fillMaxSize().background(Color.Black)) {
-        AsyncImage(
-            model = gif.url,
-            contentDescription = gif.title,
-            imageLoader = rememberGifImageLoader(),
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Fit
-        )
+        if (item.kind == FeedItem.Kind.VIDEO) {
+            VideoPage(url = item.url, isPlaying = isPlaying)
+        } else {
+            AsyncImage(
+                model = item.url,
+                contentDescription = item.title,
+                imageLoader = rememberGifImageLoader(),
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit
+            )
+        }
 
         Row(
             modifier = Modifier
@@ -124,8 +132,8 @@ fun GifPage(gif: Gif, container: AppContainer) {
                 else Icons.Filled.SentimentSatisfied,
                 tint = if (liked) Color.Yellow else Color.White,
                 onClick = {
-                    container.likeManager.toggleLike(gif.id, gif.title)
-                    liked = container.likeManager.isLiked(gif.id)
+                    container.likeManager.toggleLike(item.id, item.title)
+                    liked = container.likeManager.isLiked(item.id)
                 }
             )
             CircleButton(
@@ -138,7 +146,7 @@ fun GifPage(gif: Gif, container: AppContainer) {
             )
             CircleButton(
                 icon = Icons.Filled.Share,
-                onClick = { shareUrl(context, gif.url) }
+                onClick = { shareUrl(context, item.url) }
             )
         }
     }
@@ -146,14 +154,14 @@ fun GifPage(gif: Gif, container: AppContainer) {
     if (showComments) {
         CommentsSheet(
             postId = null,
-            gifId = gif.id,
+            gifId = item.id,
             container = container,
             onDismiss = { showComments = false }
         )
     }
     if (showReport) {
         ReportDialog(
-            target = ReportTarget.Gif(gif.id),
+            target = ReportTarget.Gif(item.id),
             container = container,
             onDismiss = { showReport = false }
         )
