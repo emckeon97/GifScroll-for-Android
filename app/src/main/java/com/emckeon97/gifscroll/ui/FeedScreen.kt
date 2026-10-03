@@ -1,12 +1,16 @@
 package com.emckeon97.gifscroll.ui
 
 import android.os.Build
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -16,10 +20,13 @@ import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.SentimentSatisfied
 import androidx.compose.material.icons.filled.SentimentVerySatisfied
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -62,17 +69,26 @@ fun rememberGifImageLoader(): ImageLoader {
 fun FeedScreen(container: AppContainer, modifier: Modifier = Modifier) {
     var items by remember { mutableStateOf<List<FeedItem>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var reloadKey by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(reloadKey) {
+        loading = true
+        error = null
         val fetched = withContext(Dispatchers.IO) {
             try {
                 RedditService.memeFeed()
             } catch (e: Exception) {
+                Log.e("GifScroll", "Feed load failed", e)
+                error = e.message ?: e.toString()
                 emptyList()
             }
         }
         // Rank by the user's liked keywords.
         items = fetched.sortedByDescending { container.likeManager.score(it.title) }
+        if (items.isEmpty() && error == null) {
+            error = "Reddit returned no usable posts."
+        }
         loading = false
     }
 
@@ -82,6 +98,24 @@ fun FeedScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 Modifier.align(Alignment.Center),
                 color = Color.White
             )
+            error != null && items.isEmpty() -> {
+                Column(
+                    Modifier.align(Alignment.Center).padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("Couldn't load memes", color = Color.White)
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        error ?: "",
+                        color = Color.Gray,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Button(onClick = { reloadKey++ }) {
+                        Text("Retry")
+                    }
+                }
+            }
             else -> {
                 val pagerState = rememberPagerState(pageCount = { items.size })
                 VerticalPager(
