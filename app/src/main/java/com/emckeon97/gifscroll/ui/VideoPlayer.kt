@@ -6,8 +6,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.VolumeOff
-import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -70,7 +70,7 @@ fun VideoPage(url: String, isPlaying: Boolean, modifier: Modifier = Modifier) {
             modifier = Modifier.fillMaxSize()
         )
         Icon(
-            imageVector = if (muted) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
+            imageVector = if (muted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
             contentDescription = if (muted) "Unmute" else "Mute",
             tint = Color.White.copy(alpha = 0.85f),
             modifier = Modifier
