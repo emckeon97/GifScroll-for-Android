@@ -177,7 +177,7 @@ fun FeedPage(item: FeedItem, container: AppContainer, isPlaying: Boolean) {
                 else Icons.Filled.SentimentSatisfied,
                 tint = if (liked) Color.Yellow else Color.White,
                 onClick = {
-                    container.likeManager.toggleLike(item.id, item.title)
+                    container.likeManager.toggleLike(item.id, item.title, item.url, item.kind.name)
                     liked = container.likeManager.isLiked(item.id)
                 }
             )

@@ -177,7 +177,7 @@ fun PostPage(post: Post, container: AppContainer) {
                     else Icons.Filled.SentimentSatisfied,
                     tint = if (liked) Color.Yellow else Color.White,
                     onClick = {
-                        container.likeManager.toggleLike(post.id, post.caption)
+                        container.likeManager.toggleLike(post.id, post.caption, post.imageUrl, "IMAGE")
                         liked = container.likeManager.isLiked(post.id)
                     }
                 )

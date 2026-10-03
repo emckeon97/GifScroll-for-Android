@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SentimentSatisfied
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -72,12 +73,17 @@ fun ProfileScreen(container: AppContainer, modifier: Modifier = Modifier) {
     val reposts by container.repostService.reposts.collectAsState()
     val scope = rememberCoroutineScope()
 
-    var tab by remember { mutableIntStateOf(0) } // 0 = uploads, 1 = shared
+    var tab by remember { mutableIntStateOf(0) } // 0 = uploads, 1 = shared, 2 = favorites
     var selectedPost by remember { mutableStateOf<Post?>(null) }
     var selectedRepost by remember { mutableStateOf<Repost?>(null) }
     var confirmDeletePost by remember { mutableStateOf<Post?>(null) }
+    var selectedLiked by remember { mutableStateOf<LikeManager.LikedMeme?>(null) }
+    var likesTick by remember { mutableIntStateOf(0) }
 
     val myUploads = remember(posts, uid) { container.postService.myPosts(uid) }
+    val favorites = remember(likesTick) {
+        container.likeManager.likedMemes().values.filter { it.url != null }
+    }
 
     LaunchedEffect(uid, signedIn) {
         container.postService.refresh()
@@ -133,6 +139,7 @@ fun ProfileScreen(container: AppContainer, modifier: Modifier = Modifier) {
         ) {
             Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Uploads") })
             Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Shared") })
+            Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("Favorites") })
         }
         // Content.
         Box(Modifier.weight(1f).fillMaxWidth()) {
@@ -150,6 +157,14 @@ fun ProfileScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 } else {
                     RepostGrid(reposts, onPick = { selectedRepost = it })
                 }
+                2 -> if (favorites.isEmpty()) {
+                    EmptyTab(
+                        "No favorites yet",
+                        "Tap the laugh button on any meme to save it here."
+                    )
+                } else {
+                    LikedGrid(favorites, onPick = { selectedLiked = it })
+                }
             }
         }
         OutlinedButton(
@@ -166,6 +181,17 @@ fun ProfileScreen(container: AppContainer, modifier: Modifier = Modifier) {
             container = container,
             onDismiss = { selectedPost = null },
             onDelete = { confirmDeletePost = post; selectedPost = null }
+        )
+    }
+    selectedLiked?.let { liked ->
+        LikedDetailDialog(
+            liked = liked,
+            onDismiss = { selectedLiked = null },
+            onUnlike = {
+                container.likeManager.toggleLike(liked.id, liked.title)
+                likesTick++
+                selectedLiked = null
+            }
         )
     }
     selectedRepost?.let { repost ->
@@ -360,6 +386,97 @@ private fun RepostDetailDialog(
             if (repost.title.isNotEmpty()) {
                 Text(
                     repost.title,
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(24.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LikedGrid(
+    favorites: List<LikeManager.LikedMeme>,
+    onPick: (LikeManager.LikedMeme) -> Unit
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        items(favorites, key = { it.id }) { liked ->
+            val isVideo = liked.kind == FeedItem.Kind.VIDEO.name
+            Box(Modifier.aspectRatio(1f).clickable { onPick(liked) }) {
+                if (isVideo) {
+                    Box(
+                        Modifier.fillMaxSize().background(Color.DarkGray),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Filled.PlayArrow,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
+                } else {
+                    AsyncImage(
+                        model = liked.url,
+                        contentDescription = liked.title,
+                        imageLoader = rememberGifImageLoader(),
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Full-screen view of a favorited meme, with unlike. */
+@Composable
+private fun LikedDetailDialog(
+    liked: LikeManager.LikedMeme,
+    onDismiss: () -> Unit,
+    onUnlike: () -> Unit
+) {
+    val isVideo = liked.kind == FeedItem.Kind.VIDEO.name
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(Modifier.fillMaxSize().background(Color.Black)) {
+            if (isVideo) {
+                VideoPage(url = liked.url ?: "", isPlaying = true)
+            } else {
+                AsyncImage(
+                    model = liked.url,
+                    contentDescription = liked.title,
+                    imageLoader = rememberGifImageLoader(),
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit
+                )
+            }
+            Row(
+                Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                CircleButton(icon = Icons.Filled.Close, onClick = onDismiss)
+                CircleButton(
+                    icon = Icons.Filled.SentimentSatisfied,
+                    tint = Color.Yellow,
+                    onClick = onUnlike
+                )
+            }
+            if (liked.title.isNotEmpty()) {
+                Text(
+                    liked.title,
                     color = Color.White,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
