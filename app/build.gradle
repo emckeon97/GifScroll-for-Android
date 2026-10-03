@@ -13,8 +13,8 @@ android {
         targetSdk 36
         versionCode 1
         versionName '1.0.0'
-        // TEST app id — replace with your real AdMob app id before publishing.
-        manifestPlaceholders = [admobAppId: "ca-app-pub-3940256099942544~3347511713"]
+        // Your AdMob app id — required for live ads.
+        manifestPlaceholders = [admobAppId: "ca-app-pub-8263714518098380~8016989686"]
     }
 
     buildTypes {

@@ -21,12 +21,10 @@ import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
 
 /**
- * AdMob config. These are Google's TEST ids — they always serve test ads.
- * When you're ready to earn: create an app + ad units at apps.admob.com and
- * swap the values here (and the app id in app/build.gradle's manifestPlaceholders).
+ * AdMob config — live IDs. Change AD_EVERY_N_ITEMS to adjust ad frequency.
  */
 object Ads {
-    const val BANNER_AD_UNIT_ID = "ca-app-pub-3940256099942544/6300978111"
+    const val BANNER_AD_UNIT_ID = "ca-app-pub-8263714518098380/5630499497"
     const val AD_EVERY_N_ITEMS = 5
 }
 
