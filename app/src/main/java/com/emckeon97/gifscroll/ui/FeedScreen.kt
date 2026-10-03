@@ -123,16 +123,30 @@ fun FeedScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 }
             }
             else -> {
-                val pagerState = rememberPagerState(pageCount = { items.size })
+                // Interleave an ad page every N memes (null = ad slot).
+                val pages = remember(items) {
+                    buildList<FeedItem?> {
+                        items.forEachIndexed { index, item ->
+                            add(item)
+                            if ((index + 1) % Ads.AD_EVERY_N_ITEMS == 0) add(null)
+                        }
+                    }
+                }
+                val pagerState = rememberPagerState(pageCount = { pages.size })
                 VerticalPager(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize()
                 ) { page ->
-                    FeedPage(
-                        item = items[page],
-                        container = container,
-                        isPlaying = pagerState.currentPage == page
-                    )
+                    val entry = pages[page]
+                    if (entry != null) {
+                        FeedPage(
+                            item = entry,
+                            container = container,
+                            isPlaying = pagerState.currentPage == page
+                        )
+                    } else {
+                        AdPage()
+                    }
                 }
             }
         }

@@ -9,10 +9,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import com.emckeon97.gifscroll.data.AppContainer
 import com.emckeon97.gifscroll.ui.MainScreen
+import com.google.android.gms.ads.MobileAds
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        MobileAds.initialize(this) {}
         setContent {
             MaterialTheme(colorScheme = darkColorScheme()) {
                 val context = LocalContext.current
