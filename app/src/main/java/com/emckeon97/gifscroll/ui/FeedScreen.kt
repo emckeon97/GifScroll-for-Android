@@ -28,9 +28,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import coil.ImageLoader
-import coil.compose.AsyncImage
-import coil.decode.ImageDecoderDecoder
+import android.os.Build
+import coil3.ImageLoader
+import coil3.compose.AsyncImage
+import coil3.gif.AnimatedImageDecoder
+import coil3.gif.GifDecoder
 import com.emckeon97.gifscroll.data.AppContainer
 import com.emckeon97.gifscroll.data.GiphyService
 import com.emckeon97.gifscroll.model.Gif
@@ -43,7 +45,13 @@ fun rememberGifImageLoader(): ImageLoader {
     val context = LocalContext.current
     return remember {
         ImageLoader.Builder(context)
-            .components { add(ImageDecoderDecoder.Factory()) }
+            .components {
+                if (Build.VERSION.SDK_INT >= 28) {
+                    add(AnimatedImageDecoder.Factory())
+                } else {
+                    add(GifDecoder.Factory())
+                }
+            }
             .build()
     }
 }
