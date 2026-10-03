@@ -52,7 +52,7 @@ fun BannerAd(modifier: Modifier = Modifier) {
             AdView(ctx).apply {
                 val metrics = ctx.resources.displayMetrics
                 val adWidth = (metrics.widthPixels / metrics.density).toInt()
-                setAdSize(AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(ctx, adWidth))
+                setAdSize(AdSize.getAnchoredAdaptiveBannerAdSize(ctx, adWidth))
                 adUnitId = Ads.BANNER_AD_UNIT_ID
                 loadAd(AdRequest.Builder().build())
             }
