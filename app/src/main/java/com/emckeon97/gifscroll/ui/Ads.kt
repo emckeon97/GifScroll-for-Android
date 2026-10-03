@@ -1,6 +1,7 @@
 package com.emckeon97.gifscroll.ui
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,9 +17,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
+import com.google.android.gms.ads.LoadAdError
 
 /**
  * AdMob config — live IDs. Change AD_EVERY_N_ITEMS to adjust ad frequency.
@@ -54,6 +57,11 @@ fun BannerAd(modifier: Modifier = Modifier) {
                 @Suppress("DEPRECATION")
                 setAdSize(AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(ctx, adWidth))
                 adUnitId = Ads.BANNER_AD_UNIT_ID
+                adListener = object : AdListener() {
+                    override fun onAdFailedToLoad(error: LoadAdError) {
+                        Log.e("GifScrollAds", "Banner failed: ${error.code} ${error.message}")
+                    }
+                }
                 loadAd(AdRequest.Builder().build())
             }
         },
