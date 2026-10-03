@@ -36,6 +36,7 @@ object RedditService {
         for (i in 0 until posts.length()) {
             val p = posts.getJSONObject(i)
             if (p.optBoolean("over_18") || p.optBoolean("stickied")) continue
+            if (p.optBoolean("is_gallery")) continue
             val title = p.optString("title").trim()
             if (title.isEmpty() || title == "[deleted]" || title == "[removed]") continue
             val id = p.optString("id")
@@ -53,7 +54,7 @@ object RedditService {
                 }
             }
 
-            val url = p.optString("url")
+            val url = p.optString("url_overridden_by_dest").ifEmpty { p.optString("url") }
             if (url.isEmpty()) continue
             val ext = url.substringAfterLast('.', "").substringBefore('?').lowercase()
             when (ext) {
