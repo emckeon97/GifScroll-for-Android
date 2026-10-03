@@ -29,9 +29,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -127,16 +125,10 @@ fun ProfileScreen(container: AppContainer, modifier: Modifier = Modifier) {
             ProfileStat(count = container.likeManager.likeCount(), label = "Likes")
         }
         // Tabs.
-        TabRow(
+        PrimaryTabRow(
             selectedTabIndex = tab,
             containerColor = Color.Black,
-            contentColor = Color.White,
-            indicator = { positions ->
-                TabRowDefaults.SecondaryIndicator(
-                    Modifier.tabIndicatorOffset(positions[tab]),
-                    color = Color.White
-                )
-            }
+            contentColor = Color.White
         ) {
             Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Uploads") })
             Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Shared") })
