@@ -27,7 +27,7 @@ import com.google.android.gms.ads.AdView
  */
 object Ads {
     const val BANNER_AD_UNIT_ID = "ca-app-pub-3940256099942544/6300978111"
-    const val AD_EVERY_N_ITEMS = 6
+    const val AD_EVERY_N_ITEMS = 5
 }
 
 /** Full-screen ad page slotted into the vertical feed pager. */
