@@ -123,12 +123,19 @@ fun FeedScreen(container: AppContainer, modifier: Modifier = Modifier) {
                 }
             }
             else -> {
-                // Interleave an ad page every N memes (null = ad slot).
+                // Interleave ad pages following the repeating pattern (null = ad slot).
                 val pages = remember(items) {
                     buildList<FeedItem?> {
-                        items.forEachIndexed { index, item ->
+                        var sinceAd = 0
+                        var patternIndex = 0
+                        for (item in items) {
                             add(item)
-                            if ((index + 1) % Ads.AD_EVERY_N_ITEMS == 0) add(null)
+                            sinceAd++
+                            if (sinceAd >= Ads.AD_PATTERN[patternIndex % Ads.AD_PATTERN.size]) {
+                                add(null)
+                                sinceAd = 0
+                                patternIndex++
+                            }
                         }
                     }
                 }

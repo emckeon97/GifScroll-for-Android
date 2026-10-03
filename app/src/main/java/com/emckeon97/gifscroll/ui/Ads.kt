@@ -25,7 +25,8 @@ import com.google.android.gms.ads.AdView
  */
 object Ads {
     const val BANNER_AD_UNIT_ID = "ca-app-pub-8263714518098380/5630499497"
-    const val AD_EVERY_N_ITEMS = 5
+    /** Ad slots follow this repeating pattern: 5 memes, ad, 10 memes, ad, ... */
+    val AD_PATTERN = listOf(5, 10)
 }
 
 /** Full-screen ad page slotted into the vertical feed pager. */
