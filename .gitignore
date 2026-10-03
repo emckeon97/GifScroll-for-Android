@@ -1,0 +1,11 @@
+# Local secrets — never commit
+app/src/main/java/com/emckeon97/gifscroll/Secrets.kt
+
+# Gradle / Android Studio
+*.iml
+.gradle/
+/local.properties
+/.idea/
+.DS_Store
+/build/
+/app/build/
