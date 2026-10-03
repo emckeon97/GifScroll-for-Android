@@ -59,7 +59,11 @@ object RedditService {
             headClient.newCall(req).execute().use { resp ->
                 val code = resp.code
                 if (code == 405 || code == 501) return true // HEAD unsupported — keep
-                code in 200..399
+                if (code !in 200..399) return false
+                // Drop HTML error pages masquerading as media.
+                val contentType = resp.header("Content-Type")?.lowercase()
+                if (contentType != null && contentType.startsWith("text/")) return false
+                true
             }
         } catch (e: Exception) {
             true // fail open on timeouts / network errors
