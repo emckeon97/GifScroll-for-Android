@@ -2,11 +2,15 @@ package com.emckeon97.gifscroll.data
 
 import com.emckeon97.gifscroll.model.FeedItem
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 import java.io.IOException
+import java.util.concurrent.TimeUnit
 
 /**
  * The main feed: funny memes, GIFs, and videos from Reddit's meme
@@ -15,6 +19,11 @@ import java.io.IOException
  */
 object RedditService {
     private val client = OkHttpClient()
+    private val headClient = OkHttpClient.Builder()
+        .connectTimeout(6, TimeUnit.SECONDS)
+        .readTimeout(6, TimeUnit.SECONDS)
+        .callTimeout(8, TimeUnit.SECONDS)
+        .build()
     private val subreddits = listOf("memes", "dankmemes", "funny")
 
     suspend fun memeFeed(): List<FeedItem> = withContext(Dispatchers.IO) {
@@ -27,7 +36,34 @@ object RedditService {
             if (!resp.isSuccessful) throw IOException("HTTP ${resp.code}")
             resp.body?.string() ?: throw IOException("empty body")
         }
-        parse(body)
+        // Drop dead media in the background before anything is shown.
+        filterDeadMedia(parse(body))
+    }
+
+    /**
+     * HEAD-checks every media URL concurrently and drops the dead ones.
+     * Fail-open: timeouts, network errors, and servers that don't support
+     * HEAD (405/501) keep the item — only definitive 4xx/5xx drops it.
+     */
+    private suspend fun filterDeadMedia(items: List<FeedItem>): List<FeedItem> =
+        coroutineScope {
+            val limiter = Dispatchers.IO.limitedParallelism(8)
+            items.map { item ->
+                async(limiter) { if (urlIsAlive(item.url)) item else null }
+            }.awaitAll().filterNotNull()
+        }
+
+    private fun urlIsAlive(url: String): Boolean {
+        return try {
+            val req = Request.Builder().url(url).head().build()
+            headClient.newCall(req).execute().use { resp ->
+                val code = resp.code
+                if (code == 405 || code == 501) return true // HEAD unsupported — keep
+                code in 200..399
+            }
+        } catch (e: Exception) {
+            true // fail open on timeouts / network errors
+        }
     }
 
     private fun parse(json: String): List<FeedItem> {
