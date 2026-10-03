@@ -220,6 +220,7 @@ fun UploadSheet(container: AppContainer, onDismiss: () -> Unit) {
     var caption by remember { mutableStateOf("") }
     var posting by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    val uid = container.authManager.userId.collectAsState().value ?: "local"
 
     val picker = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
@@ -264,7 +265,7 @@ fun UploadSheet(container: AppContainer, onDismiss: () -> Unit) {
                                     ?.readBytes()
                                     ?: throw RuntimeException("couldn't read image")
                             }
-                            container.postService.createPost(bytes, caption)
+                            container.postService.createPost(bytes, caption, uid)
                             onDismiss()
                         } catch (e: Exception) {
                             error = "Couldn't post. Check your connection and try again."

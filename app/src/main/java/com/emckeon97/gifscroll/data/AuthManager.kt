@@ -21,6 +21,9 @@ class AuthManager(context: Context) {
     private val _displayName = MutableStateFlow<String?>(null)
     val displayName: StateFlow<String?> = _displayName
 
+    private val _userId = MutableStateFlow<String?>(null)
+    val userId: StateFlow<String?> = _userId
+
     val currentDisplayName: String get() = _displayName.value ?: "anon"
 
     init {
@@ -28,6 +31,7 @@ class AuthManager(context: Context) {
             SupabaseManager.authToken = token
             _email.value = prefs.getString(KEY_EMAIL, null)
             _displayName.value = prefs.getString(KEY_NAME, null)
+            _userId.value = prefs.getString(KEY_UID, null)
             _isSignedIn.value = true
         }
     }
@@ -36,7 +40,7 @@ class AuthManager(context: Context) {
     suspend fun signUp(email: String, password: String, displayName: String): Boolean {
         val r = SupabaseManager.signUp(email, password, displayName)
         val token = r.accessToken ?: return false
-        persist(token, r.email ?: email, displayName)
+        persist(token, r.email ?: email, displayName, r.userId)
         return true
     }
 
@@ -44,7 +48,7 @@ class AuthManager(context: Context) {
         val r = SupabaseManager.signIn(email, password)
         val token = r.accessToken ?: throw RuntimeException("sign in failed")
         val name = (r.email ?: email).substringBefore("@").ifEmpty { "anon" }
-        persist(token, r.email ?: email, name)
+        persist(token, r.email ?: email, name, r.userId)
     }
 
     fun signOut() {
@@ -53,17 +57,20 @@ class AuthManager(context: Context) {
         _isSignedIn.value = false
         _email.value = null
         _displayName.value = null
+        _userId.value = null
     }
 
-    private fun persist(token: String, email: String, displayName: String) {
+    private fun persist(token: String, email: String, displayName: String, userId: String?) {
         SupabaseManager.authToken = token
         prefs.edit()
             .putString(KEY_TOKEN, token)
             .putString(KEY_EMAIL, email)
             .putString(KEY_NAME, displayName)
+            .putString(KEY_UID, userId)
             .apply()
         _email.value = email
         _displayName.value = displayName
+        _userId.value = userId
         _isSignedIn.value = true
     }
 
@@ -71,5 +78,6 @@ class AuthManager(context: Context) {
         private const val KEY_TOKEN = "token"
         private const val KEY_EMAIL = "email"
         private const val KEY_NAME = "name"
+        private const val KEY_UID = "uid"
     }
 }

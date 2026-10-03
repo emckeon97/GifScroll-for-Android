@@ -22,9 +22,12 @@ import androidx.compose.material.icons.filled.SentimentVerySatisfied
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -71,10 +74,13 @@ fun FeedScreen(container: AppContainer, modifier: Modifier = Modifier) {
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableIntStateOf(0) }
+    val uid = container.authManager.userId.collectAsState().value ?: "local"
+    val signedIn by container.authManager.isSignedIn.collectAsState()
 
-    LaunchedEffect(reloadKey) {
+    LaunchedEffect(reloadKey, uid, signedIn) {
         loading = true
         error = null
+        container.repostService.refresh(uid, signedIn)
         val fetched = withContext(Dispatchers.IO) {
             try {
                 RedditService.memeFeed()
@@ -141,6 +147,11 @@ fun FeedPage(item: FeedItem, container: AppContainer, isPlaying: Boolean) {
     }
     var showComments by remember { mutableStateOf(false) }
     var showReport by remember { mutableStateOf(false) }
+    var showShareMenu by remember { mutableStateOf(false) }
+    val reposts by container.repostService.reposts.collectAsState()
+    val uid = container.authManager.userId.collectAsState().value ?: "local"
+    val signedIn by container.authManager.isSignedIn.collectAsState()
+    val alreadyShared = reposts.any { it.itemId == item.id }
 
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         if (item.kind == FeedItem.Kind.VIDEO) {
@@ -178,10 +189,37 @@ fun FeedPage(item: FeedItem, container: AppContainer, isPlaying: Boolean) {
                 icon = Icons.Filled.Flag,
                 onClick = { showReport = true }
             )
-            CircleButton(
-                icon = Icons.Filled.Share,
-                onClick = { shareUrl(context, item.url) }
-            )
+            Box {
+                CircleButton(
+                    icon = Icons.Filled.Share,
+                    onClick = { showShareMenu = true }
+                )
+                DropdownMenu(
+                    expanded = showShareMenu,
+                    onDismissRequest = { showShareMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(if (alreadyShared) "Remove from my page" else "Share to my page") },
+                        onClick = {
+                            showShareMenu = false
+                            if (alreadyShared) {
+                                reposts.firstOrNull { it.itemId == item.id }?.let {
+                                    container.repostService.unshare(it, uid, signedIn)
+                                }
+                            } else {
+                                container.repostService.share(item, uid, signedIn)
+                            }
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Share via…") },
+                        onClick = {
+                            showShareMenu = false
+                            shareUrl(context, item.url)
+                        }
+                    )
+                }
+            }
         }
     }
 

@@ -9,7 +9,8 @@ data class Post(
     val imageUrl: String?,
     val caption: String,
     val createdAt: Long,
-    val likeCount: Int
+    val likeCount: Int,
+    val userId: String? = null
 ) {
     fun toJson(): JSONObject = JSONObject()
         .put("id", id)
@@ -18,6 +19,7 @@ data class Post(
         .put("caption", caption)
         .put("created_at", createdAt)
         .put("like_count", likeCount)
+        .put("user_id", userId)
 
     companion object {
         fun fromSupabase(o: JSONObject): Post? {
@@ -29,7 +31,8 @@ data class Post(
                 imageUrl = imageUrl,
                 caption = o.optString("caption"),
                 createdAt = parseDate(o.optString("created_at")),
-                likeCount = o.optInt("like_count")
+                likeCount = o.optInt("like_count"),
+                userId = o.optString("user_id").ifEmpty { null }
             )
         }
 
@@ -39,7 +42,8 @@ data class Post(
             imageUrl = o.optString("image_url").ifEmpty { null },
             caption = o.optString("caption"),
             createdAt = o.optLong("created_at"),
-            likeCount = o.optInt("like_count")
+            likeCount = o.optInt("like_count"),
+            userId = o.optString("user_id").ifEmpty { null }
         )
 
         private fun parseDate(raw: String): Long =

@@ -1,7 +1,6 @@
 package com.emckeon97.gifscroll.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -9,12 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -32,14 +27,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.Arrangement
 import com.emckeon97.gifscroll.data.AppContainer
 import kotlinx.coroutines.launch
 
-/** The account tab: sign in/up form, or the signed-in profile with sign out. */
+/** The account tab: sign in/up form, or the signed-in personal page. */
 @Composable
 fun AccountScreen(container: AppContainer, modifier: Modifier = Modifier) {
     val signedIn by container.authManager.isSignedIn.collectAsState()
@@ -50,34 +44,7 @@ fun AccountScreen(container: AppContainer, modifier: Modifier = Modifier) {
             .background(Color.Black)
     ) {
         if (signedIn) {
-            val email by container.authManager.email.collectAsState()
-            val name by container.authManager.displayName.collectAsState()
-            Column(
-                Modifier
-                    .fillMaxSize()
-                    .padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Spacer(Modifier.height(32.dp))
-                Icon(
-                    Icons.Filled.Person,
-                    contentDescription = null,
-                    tint = Color.Gray,
-                    modifier = Modifier.padding(8.dp)
-                )
-                Text(
-                    name ?: "anon",
-                    color = Color.White,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                email?.let { Text(it, color = Color.Gray) }
-                Spacer(Modifier.height(16.dp))
-                OutlinedButton(onClick = { container.authManager.signOut() }) {
-                    Text("Sign Out", color = Color.Red)
-                }
-            }
+            ProfileScreen(container, Modifier.fillMaxSize())
         } else {
             AuthForm(container)
         }

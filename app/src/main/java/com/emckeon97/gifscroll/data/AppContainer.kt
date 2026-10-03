@@ -7,4 +7,5 @@ class AppContainer(context: Context) {
     val likeManager = LikeManager(context)
     val authManager = AuthManager(context)
     val postService = PostService(context)
+    val repostService = RepostService(context)
 }

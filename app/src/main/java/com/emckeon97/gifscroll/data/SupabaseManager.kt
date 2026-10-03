@@ -2,6 +2,7 @@ package com.emckeon97.gifscroll.data
 
 import com.emckeon97.gifscroll.model.Comment
 import com.emckeon97.gifscroll.model.Post
+import com.emckeon97.gifscroll.model.Repost
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -100,12 +101,12 @@ object SupabaseManager {
         }
     }
 
-    suspend fun insertPost(imageUrl: String, caption: String): Post =
+    suspend fun insertPost(imageUrl: String, caption: String, userId: String? = null): Post =
         withContext(Dispatchers.IO) {
             val req = base("$PROJECT_URL/rest/v1/posts")
                 .header("Content-Type", "application/json")
                 .header("Prefer", "return=representation")
-                .post(jsonBody("image_url" to imageUrl, "caption" to caption))
+                .post(jsonBody("image_url" to imageUrl, "caption" to caption, "user_id" to userId))
                 .build()
             client.newCall(req).execute().use { resp ->
                 if (resp.code != 201) throw RuntimeException("insert post failed: ${resp.code}")
@@ -114,6 +115,15 @@ object SupabaseManager {
                     ?: throw RuntimeException("bad post payload")
             }
         }
+
+    suspend fun deletePost(id: String) = withContext(Dispatchers.IO) {
+        val req = base("$PROJECT_URL/rest/v1/posts?id=eq.$id")
+            .delete()
+            .build()
+        client.newCall(req).execute().use { resp ->
+            if (!resp.isSuccessful) throw RuntimeException("delete post failed: ${resp.code}")
+        }
+    }
 
     /** Uploads JPEG bytes to the public `post-images` bucket. Returns the public URL. */
     suspend fun uploadImage(bytes: ByteArray): String = withContext(Dispatchers.IO) {
@@ -125,6 +135,54 @@ object SupabaseManager {
         client.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) throw RuntimeException("upload failed: ${resp.code}")
             "$PROJECT_URL/storage/v1/object/public/post-images/$name"
+        }
+    }
+
+    // MARK: - Reposts
+
+    suspend fun fetchReposts(userId: String): List<Repost> = withContext(Dispatchers.IO) {
+        val url = "$PROJECT_URL/rest/v1/reposts?select=*&user_id=eq.$userId&order=created_at.desc&limit=200"
+        client.newCall(base(url).build()).execute().use { resp ->
+            if (!resp.isSuccessful) throw RuntimeException("fetch reposts failed: ${resp.code}")
+            val arr = JSONArray(resp.body?.string() ?: "[]")
+            (0 until arr.length()).mapNotNull { Repost.fromJson(arr.getJSONObject(it)) }
+        }
+    }
+
+    suspend fun insertRepost(
+        userId: String,
+        itemId: String,
+        title: String,
+        url: String,
+        kind: String
+    ): Repost = withContext(Dispatchers.IO) {
+        val req = base("$PROJECT_URL/rest/v1/reposts")
+            .header("Content-Type", "application/json")
+            .header("Prefer", "return=representation")
+            .post(
+                jsonBody(
+                    "user_id" to userId,
+                    "item_id" to itemId,
+                    "title" to title,
+                    "url" to url,
+                    "kind" to kind
+                )
+            )
+            .build()
+        client.newCall(req).execute().use { resp ->
+            if (resp.code != 201) throw RuntimeException("insert repost failed: ${resp.code}")
+            val arr = JSONArray(resp.body?.string() ?: "[]")
+            Repost.fromJson(arr.getJSONObject(0))
+                ?: throw RuntimeException("bad repost payload")
+        }
+    }
+
+    suspend fun deleteRepost(id: String) = withContext(Dispatchers.IO) {
+        val req = base("$PROJECT_URL/rest/v1/reposts?id=eq.$id")
+            .delete()
+            .build()
+        client.newCall(req).execute().use { resp ->
+            if (!resp.isSuccessful) throw RuntimeException("delete repost failed: ${resp.code}")
         }
     }
 

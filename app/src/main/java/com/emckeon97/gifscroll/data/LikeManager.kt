@@ -21,6 +21,10 @@ class LikeManager(context: Context) {
     fun isLiked(id: String): Boolean =
         prefs.getStringSet(KEY_IDS, emptySet())?.contains(id) == true
 
+    /** How many items the user has laugh-reacted to. */
+    fun likeCount(): Int =
+        prefs.getStringSet(KEY_IDS, emptySet())?.size ?: 0
+
     fun toggleLike(id: String, title: String) {
         val ids = prefs.getStringSet(KEY_IDS, emptySet())?.toMutableSet() ?: mutableSetOf()
         val scores = keywordScores().toMutableMap()

@@ -44,12 +44,12 @@ class PostService(context: Context) {
         }
     }
 
-    suspend fun createPost(imageBytes: ByteArray, caption: String) {
+    suspend fun createPost(imageBytes: ByteArray, caption: String, userId: String?) {
         val trimmed = caption.trim()
         if (remoteAvailable) {
             try {
                 val url = SupabaseManager.uploadImage(imageBytes)
-                val post = SupabaseManager.insertPost(url, trimmed)
+                val post = SupabaseManager.insertPost(url, trimmed, userId)
                 _posts.value = listOf(post) + _posts.value
                 saveCached()
                 return
@@ -61,10 +61,30 @@ class PostService(context: Context) {
         val saved: Post = withContext(Dispatchers.IO) {
             val id = UUID.randomUUID().toString()
             File(appContext.filesDir, "$id.jpg").writeBytes(imageBytes)
-            Post(id, "$id.jpg", null, trimmed, System.currentTimeMillis(), 0)
+            Post(id, "$id.jpg", null, trimmed, System.currentTimeMillis(), 0, userId)
         }
         _posts.value = listOf(saved) + _posts.value
         saveCached()
+    }
+
+    /** Posts created by one user (the profile's Uploads tab). */
+    fun myPosts(userId: String): List<Post> =
+        _posts.value.filter { it.userId == userId }.sortedByDescending { it.createdAt }
+
+    /** Deletes an upload: remote row + local file + cached state. */
+    suspend fun deletePost(post: Post) {
+        _posts.value = _posts.value.filter { it.id != post.id }
+        saveCached()
+        withContext(Dispatchers.IO) {
+            post.imageFileName?.let { File(appContext.filesDir, it).delete() }
+            if (post.imageUrl != null) {
+                try {
+                    SupabaseManager.deletePost(post.id)
+                } catch (e: Exception) {
+                    // Already gone locally; remote delete is best-effort.
+                }
+            }
+        }
     }
 
     /** Local image file for on-device posts, if it exists. */
