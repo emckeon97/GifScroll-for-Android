@@ -214,7 +214,7 @@ fun FeedPage(item: FeedItem, container: AppContainer, isPlaying: Boolean) {
 
     // Double-tap to laugh-react.
     var burstKey by remember { mutableIntStateOf(0) }
-    val doubleTapLike = {
+    val doubleTapLike: () -> Unit = {
         if (!container.likeManager.isLiked(item.id)) {
             container.likeManager.toggleLike(item.id, item.title, item.url, item.kind.name, uid, signedIn)
             liked = true
