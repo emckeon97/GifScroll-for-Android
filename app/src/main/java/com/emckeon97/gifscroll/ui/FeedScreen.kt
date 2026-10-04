@@ -177,29 +177,31 @@ fun FeedPage(item: FeedItem, container: AppContainer, isPlaying: Boolean) {
     val signedIn by container.authManager.isSignedIn.collectAsState()
     val alreadyShared = reposts.any { it.itemId == item.id }
 
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .pointerInput(item.id) {
-                detectTapGestures(
-                    onDoubleTap = {
-                        if (!container.likeManager.isLiked(item.id)) {
-                            container.likeManager.toggleLike(item.id, item.title, item.url, item.kind.name, uid, signedIn)
-                            liked = true
-                        }
-                    }
-                )
-            }
-    ) {
+    // Double-tap to laugh-react.
+    val doubleTapLike = {
+        if (!container.likeManager.isLiked(item.id)) {
+            container.likeManager.toggleLike(item.id, item.title, item.url, item.kind.name, uid, signedIn)
+            liked = true
+        }
+    }
+
+    Box(Modifier.fillMaxSize().background(Color.Black)) {
         if (item.kind == FeedItem.Kind.VIDEO) {
-            VideoPage(url = item.url, isPlaying = isPlaying)
+            VideoPage(
+                url = item.url,
+                isPlaying = isPlaying,
+                onDoubleTap = doubleTapLike
+            )
         } else {
             AsyncImage(
                 model = item.url,
                 contentDescription = item.title,
                 imageLoader = rememberGifImageLoader(),
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(item.id) {
+                        detectTapGestures(onDoubleTap = { doubleTapLike() })
+                    },
                 contentScale = ContentScale.Fit
             )
         }
