@@ -65,12 +65,6 @@ fun VideoPage(
         modifier
             .fillMaxSize()
             .background(Color.Black)
-            .pointerInput(url) {
-                detectTapGestures(
-                    onTap = { muted = !muted },
-                    onDoubleTap = { onDoubleTap() }
-                )
-            }
     ) {
         AndroidView(
             factory = { ctx ->
@@ -80,6 +74,18 @@ fun VideoPage(
                 }
             },
             modifier = Modifier.fillMaxSize()
+        )
+        // Transparent gesture layer above the player: single-tap toggles mute,
+        // double-tap laugh-reacts. (The native PlayerView would otherwise swallow touches.)
+        Box(
+            Modifier
+                .fillMaxSize()
+                .pointerInput(url) {
+                    detectTapGestures(
+                        onTap = { muted = !muted },
+                        onDoubleTap = { onDoubleTap() }
+                    )
+                }
         )
         Icon(
             imageVector = if (muted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
