@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.SentimentSatisfied
 import androidx.compose.material.icons.filled.SentimentVerySatisfied
+import androidx.compose.material3.Icon
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -34,8 +36,14 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -49,6 +57,7 @@ import com.emckeon97.gifscroll.data.AppContainer
 import com.emckeon97.gifscroll.data.KlipyService
 import com.emckeon97.gifscroll.model.FeedItem
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 /** ImageLoader with animated-GIF support. */
@@ -163,6 +172,33 @@ fun FeedScreen(container: AppContainer, modifier: Modifier = Modifier) {
     }
 }
 
+/** Big laugh-react burst, centered, shown on double-tap (matches iOS). */
+@Composable
+fun LaughBurst(onDone: () -> Unit) {
+    val scale = remember { Animatable(0.5f) }
+    val alpha = remember { Animatable(1f) }
+    LaunchedEffect(Unit) {
+        scale.animateTo(1f, tween(300, easing = FastOutSlowInEasing))
+        delay(400)
+        alpha.animateTo(0f, tween(300))
+        onDone()
+    }
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Icon(
+            imageVector = Icons.Filled.SentimentVerySatisfied,
+            contentDescription = null,
+            tint = Color.Yellow,
+            modifier = Modifier
+                .size(120.dp)
+                .graphicsLayer {
+                    scaleX = scale.value
+                    scaleY = scale.value
+                    this.alpha = alpha.value
+                }
+        )
+    }
+}
+
 @Composable
 fun FeedPage(item: FeedItem, container: AppContainer, isPlaying: Boolean) {
     val context = LocalContext.current
@@ -178,11 +214,13 @@ fun FeedPage(item: FeedItem, container: AppContainer, isPlaying: Boolean) {
     val alreadyShared = reposts.any { it.itemId == item.id }
 
     // Double-tap to laugh-react.
+    var burstKey by remember { mutableIntStateOf(0) }
     val doubleTapLike = {
         if (!container.likeManager.isLiked(item.id)) {
             container.likeManager.toggleLike(item.id, item.title, item.url, item.kind.name, uid, signedIn)
             liked = true
         }
+        burstKey++
     }
 
     Box(Modifier.fillMaxSize().background(Color.Black)) {
@@ -259,6 +297,13 @@ fun FeedPage(item: FeedItem, container: AppContainer, isPlaying: Boolean) {
                         }
                     )
                 }
+            }
+        }
+
+        // Centered laugh burst on double-tap.
+        key(burstKey) {
+            if (burstKey > 0) {
+                LaughBurst(onDone = { burstKey = 0 })
             }
         }
     }
