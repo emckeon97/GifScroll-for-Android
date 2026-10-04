@@ -87,6 +87,7 @@ fun ProfileScreen(container: AppContainer, modifier: Modifier = Modifier) {
     LaunchedEffect(uid, signedIn) {
         container.postService.refresh()
         container.repostService.refresh(uid, signedIn)
+        container.likeManager.refresh(uid, signedIn)
     }
 
     Column(modifier.fillMaxSize().background(Color.Black)) {
@@ -181,7 +182,7 @@ fun ProfileScreen(container: AppContainer, modifier: Modifier = Modifier) {
             liked = liked,
             onDismiss = { selectedLiked = null },
             onUnlike = {
-                container.likeManager.toggleLike(liked.id, liked.title)
+                container.likeManager.toggleLike(liked.id, liked.title, null, null, uid, signedIn)
                 likesTick++
                 selectedLiked = null
             }
