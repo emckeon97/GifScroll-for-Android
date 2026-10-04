@@ -1,15 +1,21 @@
 package com.emckeon97.gifscroll.data
 
 import android.content.Context
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 /**
  * Tracks laugh-reacts and learns which keywords the user likes,
- * so the feed can rank matching GIFs first. Persisted locally.
+ * so the feed can rank matching GIFs first.
+ * Persisted locally; synced to the Supabase `likes` table when signed in.
  */
 class LikeManager(context: Context) {
     private val prefs =
         context.getSharedPreferences("gifscroll.likes", Context.MODE_PRIVATE)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     /** A laugh-reacted meme with enough media info to display it. */
     data class LikedMeme(
@@ -34,14 +40,22 @@ class LikeManager(context: Context) {
         prefs.getStringSet(KEY_IDS, emptySet())?.size ?: 0
 
     fun toggleLike(id: String, title: String) {
-        toggleLike(id, title, null, null)
+        toggleLike(id, title, null, null, "local", false)
     }
 
-    fun toggleLike(id: String, title: String, url: String?, kind: String?) {
+    fun toggleLike(
+        id: String,
+        title: String,
+        url: String?,
+        kind: String?,
+        userId: String = "local",
+        signedIn: Boolean = false
+    ) {
         val ids = prefs.getStringSet(KEY_IDS, emptySet())?.toMutableSet() ?: mutableSetOf()
         val scores = keywordScores().toMutableMap()
         val liked = likedMemes().toMutableMap()
-        if (ids.contains(id)) {
+        val wasLiked = ids.contains(id)
+        if (wasLiked) {
             ids.remove(id)
             liked.remove(id)
             adjust(scores, title, -1)
@@ -62,6 +76,53 @@ class LikeManager(context: Context) {
             .putString(KEY_LIKED, likedJson.toString())
             .putString(KEY_SCORES, JSONObject(scores as Map<*, *>).toString())
             .apply()
+        // Sync to Supabase in the background (best-effort).
+        if (signedIn) {
+            scope.launch {
+                try {
+                    if (wasLiked) {
+                        SupabaseManager.deleteLike(userId, id)
+                    } else {
+                        SupabaseManager.insertLike(userId, id, title, url, kind)
+                    }
+                } catch (e: Exception) {
+                    // Local state is authoritative; remote sync is best-effort.
+                }
+            }
+        }
+    }
+
+    /** Loads likes from Supabase when signed in, merging with local likes. */
+    fun refresh(userId: String, signedIn: Boolean) {
+        if (!signedIn) return
+        scope.launch {
+            try {
+                val remote = SupabaseManager.fetchLikes(userId)
+                val ids = prefs.getStringSet(KEY_IDS, emptySet())?.toMutableSet() ?: mutableSetOf()
+                val liked = likedMemes().toMutableMap()
+                val scores = keywordScores().toMutableMap()
+                for (meme in remote) {
+                    if (ids.add(meme.id)) {
+                        liked[meme.id] = meme
+                        adjust(scores, meme.title, 1)
+                    }
+                }
+                val likedJson = JSONObject()
+                liked.values.forEach {
+                    likedJson.put(it.id, JSONObject()
+                        .put("title", it.title)
+                        .put("url", it.url)
+                        .put("kind", it.kind))
+                }
+                prefs.edit()
+                    .putStringSet(KEY_IDS, ids)
+                    .putString(KEY_LIKED, likedJson.toString())
+                    .putString(KEY_SCORES, JSONObject(scores as Map<*, *>).toString())
+                    .apply()
+            } catch (e: Exception) {
+                // Keep local state on failure.
+            }
+        }
     }
 
     /** Memes the user laugh-reacted to that have displayable media. */
