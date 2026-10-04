@@ -36,11 +36,27 @@ class AuthManager(context: Context) {
         }
     }
 
+    /** Refresh the access token in the background. Access tokens expire after 1 hour. */
+    suspend fun refreshSession() {
+        val refreshToken = prefs.getString(KEY_REFRESH, null) ?: return
+        try {
+            val r = SupabaseManager.refreshSession(refreshToken)
+            val token = r.accessToken ?: return
+            SupabaseManager.authToken = token
+            prefs.edit()
+                .putString(KEY_TOKEN, token)
+                .putString(KEY_REFRESH, r.refreshToken)
+                .apply()
+        } catch (e: Exception) {
+            signOut()
+        }
+    }
+
     /** Returns true when signed in immediately, false when email confirmation is pending. */
     suspend fun signUp(email: String, password: String, displayName: String): Boolean {
         val r = SupabaseManager.signUp(email, password, displayName)
         val token = r.accessToken ?: return false
-        persist(token, r.email ?: email, displayName, r.userId)
+        persist(token, r.refreshToken, r.email ?: email, displayName, r.userId)
         return true
     }
 
@@ -48,7 +64,7 @@ class AuthManager(context: Context) {
         val r = SupabaseManager.signIn(email, password)
         val token = r.accessToken ?: throw RuntimeException("sign in failed")
         val name = (r.email ?: email).substringBefore("@").ifEmpty { "anon" }
-        persist(token, r.email ?: email, name, r.userId)
+        persist(token, r.refreshToken, r.email ?: email, name, r.userId)
     }
 
     fun signOut() {
@@ -60,10 +76,11 @@ class AuthManager(context: Context) {
         _userId.value = null
     }
 
-    private fun persist(token: String, email: String, displayName: String, userId: String?) {
+    private fun persist(token: String, refreshToken: String?, email: String, displayName: String, userId: String?) {
         SupabaseManager.authToken = token
         prefs.edit()
             .putString(KEY_TOKEN, token)
+            .putString(KEY_REFRESH, refreshToken)
             .putString(KEY_EMAIL, email)
             .putString(KEY_NAME, displayName)
             .putString(KEY_UID, userId)
@@ -76,6 +93,7 @@ class AuthManager(context: Context) {
 
     companion object {
         private const val KEY_TOKEN = "token"
+        private const val KEY_REFRESH = "refresh_token"
         private const val KEY_EMAIL = "email"
         private const val KEY_NAME = "name"
         private const val KEY_UID = "uid"
