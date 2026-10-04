@@ -42,6 +42,7 @@ object SupabaseManager {
 
     data class AuthResult(
         val accessToken: String?,
+        val refreshToken: String?,
         val userId: String?,
         val email: String?
     )
@@ -85,9 +86,29 @@ object SupabaseManager {
         val user = o.optJSONObject("user")
         return AuthResult(
             accessToken = o.optString("access_token").ifEmpty { null },
+            refreshToken = o.optString("refresh_token").ifEmpty { null },
             userId = user?.optString("id")?.ifEmpty { null },
             email = user?.optString("email")?.ifEmpty { null }
         )
+    }
+
+    suspend fun refreshSession(refreshToken: String): AuthResult =
+        withContext(Dispatchers.IO) {
+            val url = "$projectUrl/auth/v1/token?grant_type=refresh_token"
+            val body = JSONObject()
+                .put("refresh_token", refreshToken)
+                .toString().toRequestBody(jsonMedia)
+            val req = Request.Builder()
+                .url(url)
+                .post(body)
+                .header("apikey", apiKey)
+                .header("Content-Type", "application/json")
+                .build()
+            client.newCall(req).execute().use { resp ->
+                if (!resp.isSuccessful) throw RuntimeException("refresh failed: ${resp.code}")
+                parseAuth(resp.body?.string() ?: "{}")
+            }
+        }
     }
 
     // MARK: - Posts
