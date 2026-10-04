@@ -94,14 +94,14 @@ object SupabaseManager {
 
     suspend fun refreshSession(refreshToken: String): AuthResult =
         withContext(Dispatchers.IO) {
-            val url = "$projectUrl/auth/v1/token?grant_type=refresh_token"
+            val url = "$PROJECT_URL/auth/v1/token?grant_type=refresh_token"
             val body = JSONObject()
                 .put("refresh_token", refreshToken)
                 .toString().toRequestBody(jsonMedia)
             val req = Request.Builder()
                 .url(url)
                 .post(body)
-                .header("apikey", apiKey)
+                .header("apikey", API_KEY)
                 .header("Content-Type", "application/json")
                 .build()
             client.newCall(req).execute().use { resp ->
