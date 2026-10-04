@@ -12,9 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
@@ -22,7 +20,6 @@ import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.SentimentSatisfied
 import androidx.compose.material.icons.filled.SentimentVerySatisfied
-import androidx.compose.material3.Icon
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,17 +34,9 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -60,8 +49,6 @@ import com.emckeon97.gifscroll.data.AppContainer
 import com.emckeon97.gifscroll.data.KlipyService
 import com.emckeon97.gifscroll.model.FeedItem
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** ImageLoader with animated-GIF support. */
@@ -175,40 +162,6 @@ fun FeedScreen(container: AppContainer, modifier: Modifier = Modifier) {
     }
 }
 
-/** Big laugh-react burst shown where the user double-tapped. */
-@Composable
-fun LaughBurst(offset: Offset, onDone: () -> Unit) {
-    val density = LocalDensity.current
-    val scale = remember { Animatable(0.3f) }
-    val alpha = remember { Animatable(1f) }
-    LaunchedEffect(Unit) {
-        launch { scale.animateTo(1f, tween(250, easing = FastOutSlowInEasing)) }
-        delay(450)
-        launch { alpha.animateTo(0f, tween(250)) }
-        delay(300)
-        onDone()
-    }
-    val iconPx = with(density) { 110.dp.toPx() }
-    Icon(
-        imageVector = Icons.Filled.SentimentVerySatisfied,
-        contentDescription = "Laughed",
-        tint = Color.Yellow,
-        modifier = Modifier
-            .offset {
-                IntOffset(
-                    (offset.x - iconPx / 2).toInt(),
-                    (offset.y - iconPx / 2).toInt()
-                )
-            }
-            .size(110.dp)
-            .graphicsLayer {
-                scaleX = scale.value
-                scaleY = scale.value
-                this.alpha = alpha.value
-            }
-    )
-}
-
 @Composable
 fun FeedPage(item: FeedItem, container: AppContainer, isPlaying: Boolean) {
     val context = LocalContext.current
@@ -223,20 +176,17 @@ fun FeedPage(item: FeedItem, container: AppContainer, isPlaying: Boolean) {
     val signedIn by container.authManager.isSignedIn.collectAsState()
     val alreadyShared = reposts.any { it.itemId == item.id }
 
-    var burst by remember { mutableStateOf<Pair<Offset, Int>?>(null) }
-
     Box(
         Modifier
             .fillMaxSize()
             .background(Color.Black)
             .pointerInput(item.id) {
                 detectTapGestures(
-                    onDoubleTap = { tapOffset ->
+                    onDoubleTap = {
                         if (!container.likeManager.isLiked(item.id)) {
                             container.likeManager.toggleLike(item.id, item.title, item.url, item.kind.name)
                             liked = true
                         }
-                        burst = tapOffset to ((burst?.second ?: 0) + 1)
                     }
                 )
             }
@@ -306,15 +256,6 @@ fun FeedPage(item: FeedItem, container: AppContainer, isPlaying: Boolean) {
                         }
                     )
                 }
-            }
-        }
-        // Double-tap laugh burst.
-        burst?.let { (tapOffset, nonce) ->
-            key(nonce) {
-                LaughBurst(
-                    offset = tapOffset,
-                    onDone = { if (burst?.second == nonce) burst = null }
-                )
             }
         }
     }
