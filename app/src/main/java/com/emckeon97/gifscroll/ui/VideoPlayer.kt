@@ -1,6 +1,7 @@
 package com.emckeon97.gifscroll.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -32,7 +34,12 @@ import androidx.media3.ui.PlayerView
  * Plays only while [isPlaying] (the visible pager page).
  */
 @Composable
-fun VideoPage(url: String, isPlaying: Boolean, modifier: Modifier = Modifier) {
+fun VideoPage(
+    url: String,
+    isPlaying: Boolean,
+    modifier: Modifier = Modifier,
+    onDoubleTap: () -> Unit = {}
+) {
     val context = LocalContext.current
     var muted by remember { mutableStateOf(false) }
 
@@ -58,7 +65,12 @@ fun VideoPage(url: String, isPlaying: Boolean, modifier: Modifier = Modifier) {
         modifier
             .fillMaxSize()
             .background(Color.Black)
-            .clickable { muted = !muted }
+            .pointerInput(url) {
+                detectTapGestures(
+                    onTap = { muted = !muted },
+                    onDoubleTap = { onDoubleTap() }
+                )
+            }
     ) {
         AndroidView(
             factory = { ctx ->
