@@ -44,6 +44,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -183,20 +184,18 @@ fun LaughBurst(onDone: () -> Unit) {
         alpha.animateTo(0f, tween(300))
         onDone()
     }
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Icon(
-            imageVector = Icons.Filled.SentimentVerySatisfied,
-            contentDescription = null,
-            tint = Color.Yellow,
-            modifier = Modifier
-                .size(120.dp)
-                .graphicsLayer {
-                    scaleX = scale.value
-                    scaleY = scale.value
-                    this.alpha = alpha.value
-                }
-        )
-    }
+    Icon(
+        imageVector = Icons.Filled.SentimentVerySatisfied,
+        contentDescription = null,
+        tint = Color.Yellow,
+        modifier = Modifier
+            .size(120.dp)
+            .graphicsLayer {
+                scaleX = scale.value
+                scaleY = scale.value
+                this.alpha = alpha.value
+            }
+    )
 }
 
 @Composable
@@ -303,7 +302,9 @@ fun FeedPage(item: FeedItem, container: AppContainer, isPlaying: Boolean) {
         // Centered laugh burst on double-tap.
         key(burstKey) {
             if (burstKey > 0) {
-                LaughBurst(onDone = { burstKey = 0 })
+                Box(Modifier.fillMaxSize().zIndex(10f), contentAlignment = Alignment.Center) {
+                    LaughBurst(onDone = { burstKey = 0 })
+                }
             }
         }
     }
