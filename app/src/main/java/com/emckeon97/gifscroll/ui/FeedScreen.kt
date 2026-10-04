@@ -299,6 +299,15 @@ fun FeedPage(item: FeedItem, container: AppContainer, isPlaying: Boolean) {
             }
         }
 
+        // Floating wordmark, Instagram-style.
+        GifScrollLogo(
+            fontSize = 24.sp,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 12.dp)
+                .zIndex(5f)
+        )
+
         // Centered laugh burst on double-tap.
         key(burstKey) {
             if (burstKey > 0) {
