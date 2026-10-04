@@ -109,7 +109,6 @@ object SupabaseManager {
                 parseAuth(resp.body?.string() ?: "{}")
             }
         }
-    }
 
     // MARK: - Posts
 
