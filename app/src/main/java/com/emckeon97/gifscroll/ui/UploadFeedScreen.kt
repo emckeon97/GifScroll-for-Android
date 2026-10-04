@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.SentimentSatisfied
 import androidx.compose.material.icons.filled.SentimentVerySatisfied
 import androidx.compose.material3.Button
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -68,8 +69,8 @@ fun UploadFeedScreen(container: AppContainer, modifier: Modifier = Modifier) {
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = { GifScrollLogo(fontSize = 26.sp) },
+            CenterAlignedTopAppBar(
+                title = { GifScrollLogo(fontSize = 32.sp) },
                 actions = {
                     IconButton(onClick = { showUpload = true }) {
                         Icon(Icons.Filled.Add, contentDescription = "Upload")
