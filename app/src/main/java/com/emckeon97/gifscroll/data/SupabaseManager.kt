@@ -186,6 +186,59 @@ object SupabaseManager {
         }
     }
 
+    // MARK: - Likes
+
+    suspend fun fetchLikes(userId: String): List<LikeManager.LikedMeme> = withContext(Dispatchers.IO) {
+        val url = "$PROJECT_URL/rest/v1/likes?select=item_id,title,url,kind&user_id=eq.$userId&order=created_at.desc&limit=500"
+        client.newCall(base(url).build()).execute().use { resp ->
+            if (!resp.isSuccessful) throw RuntimeException("fetch likes failed: ${resp.code}")
+            val arr = JSONArray(resp.body?.string() ?: "[]")
+            (0 until arr.length()).mapNotNull {
+                val o = arr.getJSONObject(it)
+                LikeManager.LikedMeme(
+                    o.optString("item_id"),
+                    o.optString("title"),
+                    o.optString("url").ifEmpty { null },
+                    o.optString("kind").ifEmpty { null }
+                )
+            }
+        }
+    }
+
+    suspend fun insertLike(
+        userId: String,
+        itemId: String,
+        title: String,
+        url: String?,
+        kind: String?
+    ) = withContext(Dispatchers.IO) {
+        val req = base("$PROJECT_URL/rest/v1/likes")
+            .header("Content-Type", "application/json")
+            .header("Prefer", "resolution=merge-duplicates")
+            .post(
+                jsonBody(
+                    "user_id" to userId,
+                    "item_id" to itemId,
+                    "title" to title,
+                    "url" to url,
+                    "kind" to kind
+                )
+            )
+            .build()
+        client.newCall(req).execute().use { resp ->
+            if (!resp.isSuccessful) throw RuntimeException("insert like failed: ${resp.code}")
+        }
+    }
+
+    suspend fun deleteLike(userId: String, itemId: String) = withContext(Dispatchers.IO) {
+        val req = base("$PROJECT_URL/rest/v1/likes?user_id=eq.$userId&item_id=eq.$itemId")
+            .delete()
+            .build()
+        client.newCall(req).execute().use { resp ->
+            if (!resp.isSuccessful) throw RuntimeException("delete like failed: ${resp.code}")
+        }
+    }
+
     // MARK: - Comments
 
     suspend fun fetchComments(postId: String? = null, gifId: String? = null): List<Comment> =
