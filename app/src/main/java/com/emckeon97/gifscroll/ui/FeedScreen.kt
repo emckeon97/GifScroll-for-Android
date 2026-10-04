@@ -83,6 +83,7 @@ fun FeedScreen(container: AppContainer, modifier: Modifier = Modifier) {
         loading = true
         error = null
         container.repostService.refresh(uid, signedIn)
+        container.likeManager.refresh(uid, signedIn)
         val fetched = withContext(Dispatchers.IO) {
             try {
                 KlipyService.memeFeed()
@@ -184,7 +185,7 @@ fun FeedPage(item: FeedItem, container: AppContainer, isPlaying: Boolean) {
                 detectTapGestures(
                     onDoubleTap = {
                         if (!container.likeManager.isLiked(item.id)) {
-                            container.likeManager.toggleLike(item.id, item.title, item.url, item.kind.name)
+                            container.likeManager.toggleLike(item.id, item.title, item.url, item.kind.name, uid, signedIn)
                             liked = true
                         }
                     }
@@ -214,7 +215,7 @@ fun FeedPage(item: FeedItem, container: AppContainer, isPlaying: Boolean) {
                 else Icons.Filled.SentimentSatisfied,
                 tint = if (liked) Color.Yellow else Color.White,
                 onClick = {
-                    container.likeManager.toggleLike(item.id, item.title, item.url, item.kind.name)
+                    container.likeManager.toggleLike(item.id, item.title, item.url, item.kind.name, uid, signedIn)
                     liked = container.likeManager.isLiked(item.id)
                 }
             )
