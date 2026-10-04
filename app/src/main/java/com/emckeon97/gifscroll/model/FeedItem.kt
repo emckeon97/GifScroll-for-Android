@@ -1,6 +1,6 @@
 package com.emckeon97.gifscroll.model
 
-/** One item in the meme feed: a captioned image, GIF, or video from Reddit. */
+/** One item in the meme feed: a GIF from Klipy. */
 data class FeedItem(
     val id: String,
     val title: String,

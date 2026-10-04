@@ -44,7 +44,7 @@ import coil3.compose.AsyncImage
 import coil3.gif.AnimatedImageDecoder
 import coil3.gif.GifDecoder
 import com.emckeon97.gifscroll.data.AppContainer
-import com.emckeon97.gifscroll.data.RedditService
+import com.emckeon97.gifscroll.data.KlipyService
 import com.emckeon97.gifscroll.model.FeedItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -83,7 +83,7 @@ fun FeedScreen(container: AppContainer, modifier: Modifier = Modifier) {
         container.repostService.refresh(uid, signedIn)
         val fetched = withContext(Dispatchers.IO) {
             try {
-                RedditService.memeFeed()
+                KlipyService.memeFeed()
             } catch (e: Exception) {
                 Log.e("GifScroll", "Feed load failed", e)
                 error = e.message ?: e.toString()
@@ -93,7 +93,7 @@ fun FeedScreen(container: AppContainer, modifier: Modifier = Modifier) {
         // Rank by the user's liked keywords.
         items = fetched.sortedByDescending { container.likeManager.score(it.title) }
         if (items.isEmpty() && error == null) {
-            error = "Reddit returned no usable posts."
+            error = "Klipy returned no usable GIFs."
         }
         loading = false
     }
