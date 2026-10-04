@@ -39,10 +39,10 @@ object KlipyService {
             val title = item.optString("title")
             val url = item.optJSONObject("file")
                 ?.optJSONObject("md")
-                ?.optJSONObject("gif")
+                ?.optJSONObject("mp4")
                 ?.optString("url")
             if (url.isNullOrEmpty()) continue
-            out.add(FeedItem(id, title, FeedItem.Kind.GIF, url))
+            out.add(FeedItem(id, title, FeedItem.Kind.VIDEO, url))
         }
         return out
     }
