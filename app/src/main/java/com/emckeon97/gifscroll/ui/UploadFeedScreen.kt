@@ -48,6 +48,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.emckeon97.gifscroll.data.AppContainer
 import com.emckeon97.gifscroll.model.Post
@@ -68,7 +69,7 @@ fun UploadFeedScreen(container: AppContainer, modifier: Modifier = Modifier) {
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text("GifScroll") },
+                title = { GifScrollLogo(fontSize = 26.sp) },
                 actions = {
                     IconButton(onClick = { showUpload = true }) {
                         Icon(Icons.Filled.Add, contentDescription = "Upload")
