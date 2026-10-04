@@ -301,7 +301,7 @@ fun FeedPage(item: FeedItem, container: AppContainer, isPlaying: Boolean) {
 
         // Floating wordmark, Instagram-style.
         GifScrollLogo(
-            fontSize = 24.sp,
+            fontSize = 32.sp,
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(top = 12.dp)
