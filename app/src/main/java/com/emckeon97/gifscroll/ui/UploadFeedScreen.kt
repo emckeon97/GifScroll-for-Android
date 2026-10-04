@@ -125,6 +125,8 @@ fun UploadFeedScreen(container: AppContainer, modifier: Modifier = Modifier) {
 
 @Composable
 fun PostPage(post: Post, container: AppContainer) {
+    val uid = container.authManager.userId.collectAsState().value ?: "local"
+    val signedIn by container.authManager.isSignedIn.collectAsState()
     var liked by remember(post.id) {
         mutableStateOf(container.likeManager.isLiked(post.id))
     }
@@ -177,7 +179,7 @@ fun PostPage(post: Post, container: AppContainer) {
                     else Icons.Filled.SentimentSatisfied,
                     tint = if (liked) Color.Yellow else Color.White,
                     onClick = {
-                        container.likeManager.toggleLike(post.id, post.caption, post.imageUrl, "IMAGE")
+                        container.likeManager.toggleLike(post.id, post.caption, post.imageUrl, "IMAGE", uid, signedIn)
                         liked = container.likeManager.isLiked(post.id)
                     }
                 )
